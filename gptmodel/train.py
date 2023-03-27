@@ -31,7 +31,6 @@ def train(config: Dict[str, dict], device: str, cached=False):
         pin_memory_device=device,
     )
 
-    logging.info("Preparing model for training")
     model = GPTModel(
         vocab_size=len(vocab),
         embed_size=hyper_params["embed_size"],

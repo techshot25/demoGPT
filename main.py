@@ -58,7 +58,7 @@ if __name__ == "__main__":
         torch.save(model.state_dict(), args.file_name)
     if args.cached:
         logging.info("Loading model from %s", args.file_name)
-        model = torch.load(args.file_name)
+        model.load_state_dict(torch.load(args.file_name))
 
     if args.evaluate:
         while True:
