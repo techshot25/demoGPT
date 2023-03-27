@@ -1,3 +1,4 @@
+from __future__ import annotations
 from argparse import ArgumentParser
 import logging
 
@@ -15,7 +16,7 @@ logging.basicConfig(
 )
 
 
-if __name__ == "__main__":
+def main(*args):
     parser = ArgumentParser(description="Entrypoint for training, testing, "
                             "saving, and loading the GPT model.")
     group = parser.add_mutually_exclusive_group()
@@ -45,7 +46,7 @@ if __name__ == "__main__":
         help="Evaluate the model by asking for input tokens."
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(*args)
 
     with open(args.configuration, "r", encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
@@ -74,3 +75,7 @@ if __name__ == "__main__":
                 print(tokens)
             except KeyboardInterrupt:
                 break
+
+
+if __name__ == "__main__":
+    main()
