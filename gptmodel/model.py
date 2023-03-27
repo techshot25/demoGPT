@@ -60,7 +60,6 @@ class GPTModel(nn.Module):
         num_heads: int,
         block_size: int,
         dropout: float,
-        *args
     ):
         super().__init__()
         self.block_size = block_size
@@ -93,6 +92,22 @@ class GPTModel(nn.Module):
         return logits, loss
 
     def generate(self, input_ids: Tensor, max_new_tokens: int) -> Tensor:
+        """Generate tokens from a starting up to a maximum number of tokens
+
+        Parameters
+        ----------
+        input_ids: Tensor
+            The input tensor of shape (0, seq_len) of integer (long)
+            encoded words.
+
+        max_new_tokens: int
+            Maximum number of tokens to generate.
+
+        Returns
+        -------
+        Tensor
+            A longer tensor of size (0, seq_len + max_new_tokens)
+        """
         if len(input_ids.shape) == 1:
             input_ids = input_ids.unsqueeze(0)
         for _ in range(max_new_tokens):

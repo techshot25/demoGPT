@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, Tuple
+from typing import Callable, Generator, Iterable, Tuple
 
 import torch
 from torch import Tensor
@@ -27,7 +27,9 @@ class SequenceDataset(Dataset):
         return self.transform_text("\n".join(self.data_iter))
 
     def transform_text(self, data: str) -> Tensor:
-        return torch.tensor([self.vocab[token] for token in self.tokenizer(data)])
+        return torch.tensor(
+            [self.vocab[token] for token in self.tokenizer(data)], dtype=torch.long
+        )
 
     def __len__(self):
         return self.num_blocks
@@ -35,16 +37,14 @@ class SequenceDataset(Dataset):
     def __getitem__(self, idx):
         start_idx = idx * self.block_size
         end_idx = (idx + 1) * self.block_size
-        input_block = self.tokens[start_idx:end_idx]
-        target_block = self.tokens[
-            start_idx + 1:end_idx + 1
+        memory = self.tokens[start_idx:end_idx]
+        target = self.tokens[
+            start_idx + 1 : end_idx + 1
         ]  # shift target block by one
-        return input_block, target_block
+        return memory, target
 
 
-def get_datasets(
-    tokenizer_name: str, block_size: int
-) -> Tuple[SequenceDataset, SequenceDataset, Vocab]:
+def get_datasets(tokenizer_name: str, block_size: int):
     tokenizer = get_tokenizer(tokenizer_name)
     train_iter, val_iter, vocab = get_text_data(tokenizer)
     train_dataset = SequenceDataset(train_iter, vocab, tokenizer, block_size)
@@ -52,21 +52,21 @@ def get_datasets(
     return train_dataset, val_dataset, vocab
 
 
-def get_train_val_iterators() -> Tuple[Iterable]:
+def get_wikitext_iterators() -> Tuple[Iterable, Iterable]:
     """Gets the iterators to build the data"""
     train_iter = WikiText2(root="data", split="train")
     val_iter = WikiText2(root="data", split="valid")
     return train_iter, val_iter
 
 
-def yield_tokens(tokenizer: Callable, data_iter):
+def yield_tokens(tokenizer: Callable, data_iter) -> Generator[int, None, None]:
     """Should be modified if the iterator yields multiple outputs"""
     for text in data_iter:
         yield tokenizer(text)
 
 
 def get_text_data(tokenizer: Callable):
-    train_iter, val_iter = get_train_val_iterators()
+    train_iter, val_iter = get_wikitext_iterators()
     vocab = build_vocab_from_iterator(
         yield_tokens(tokenizer, train_iter),
         min_freq=3,
@@ -93,6 +93,6 @@ def decode(inputs: torch.LongTensor, vocab: Vocab) -> str:
 def sample_tokens(
     model: GPTModel, vocab: Vocab, device: str, prompt: str, max_new_tokens: int
 ):
-    encoded = encode(prompt).to(device)
-    tokens = model.generate(encoded, max_new_tokens=max_new_tokens)
+    encoded = encode(prompt, vocab).to(device)
+    tokens = model.generate(encoded, max_new_tokens=max_new_tokens).flatten()
     return decode(tokens, vocab)

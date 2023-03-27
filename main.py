@@ -11,12 +11,13 @@ from gptmodel.utils import sample_tokens
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(lineno)d @ %(filename)s - [%(levelname)s]: %(message)s",
-    datefmt="%I:%M:%S%p",
+    datefmt="%I:%M:%S %p",
 )
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Entrypoint for training, testing, "
+                            "saving, and loading the GPT model.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--save", action="store_true", help="Save model to file.")
     parser.add_argument(
@@ -30,13 +31,18 @@ if __name__ == "__main__":
         "--max-tokens",
         type=int,
         default=20,
-        help="Max number of tokens to use for predictions.",
+        help="Max number of tokens to use for predictions (default=20).",
     )
     parser.add_argument(
         "--configuration",
         type=str,
         default="config.yml",
         help="Path to configuration yaml file .",
+    )
+    parser.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Evaluate the model by asking for input tokens."
     )
 
     args = parser.parse_args()
@@ -48,18 +54,23 @@ if __name__ == "__main__":
     logging.info("Using %s backend", device)
     model, vocab = train(config, device, cached=args.cached)
     if args.save:
-        logging.info("Saving model to %s", parser.file_name)
-        torch.save(model.state_dict(), parser.file_name)
+        logging.info("Saving model to %s", args.file_name)
+        torch.save(model.state_dict(), args.file_name)
     if args.cached:
-        logging.info("Loading model from %s", parser.file_name)
-        model = torch.load(parser.file_name)
+        logging.info("Loading model from %s", args.file_name)
+        model = torch.load(args.file_name)
 
-    prompt = input("Enter some tokens to start: ")
-    tokens = sample_tokens(
-        model=model,
-        vocab=vocab,
-        device=device,
-        prompt=prompt,
-        max_new_tokens=args.max_tokens,
-    )
-    print(tokens)
+    if args.evaluate:
+        while True:
+            try:
+                prompt = input("Enter some tokens to start: ")
+                tokens = sample_tokens(
+                    model=model,
+                    vocab=vocab,
+                    device=device,
+                    prompt=prompt,
+                    max_new_tokens=args.max_tokens,
+                )
+                print(tokens)
+            except KeyboardInterrupt:
+                break

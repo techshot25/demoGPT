@@ -35,7 +35,6 @@ def train(config: Dict[str, dict], device: str, cached=False):
     model = GPTModel(
         vocab_size=len(vocab),
         embed_size=hyper_params["embed_size"],
-        num_layers=hyper_params["num_layers"],
         dropout=hyper_params["dropout"],
         num_heads=hyper_params["num_heads"],
         block_size=hyper_params["block_size"],
@@ -43,13 +42,16 @@ def train(config: Dict[str, dict], device: str, cached=False):
 
     optimizer = optim.Adam(model.parameters(), lr=hyper_params["lr"])
 
+    num_params = sum(param.numel() for param in model.parameters() if param.requires_grad)
+    logging.info("Model has %.4f million trainable parameters", num_params / 1e6)
+
     train_params = config["train_params"]
     num_epochs = train_params["num_epochs"]
 
     if cached:
         return model, vocab
 
-    for epoch in range(num_epochs):
+    for epoch in range(1, 1 + num_epochs):
         # Train
         model.train()
         train_loss = 0.0
@@ -74,7 +76,7 @@ def train(config: Dict[str, dict], device: str, cached=False):
 
         logging.info(
             "Epoch %i/%i: train_loss=%.4f, val_loss=%.4f",
-            epoch + 1,
+            epoch,
             num_epochs,
             train_loss,
             val_loss,
