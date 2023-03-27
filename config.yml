@@ -1,0 +1,13 @@
+hyper_params:
+  lr: 0.003
+  tokenizer: "basic_english"
+  embed_size: 512
+  num_layers: 5
+  hidden_size: 1024
+  dropout: 0.2
+  block_size: 128
+  batch_size: 32
+  num_heads: 8
+
+train_params:
+  num_epochs: 100

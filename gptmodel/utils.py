@@ -1,6 +1,4 @@
-import logging
 from typing import Callable, Iterable, Tuple
-
 
 import torch
 from torch import Tensor
@@ -9,15 +7,20 @@ from torchtext.data.utils import get_tokenizer
 from torchtext.datasets import WikiText2
 from torchtext.vocab import Vocab, build_vocab_from_iterator
 
+from gptmodel.model import GPTModel
+
 
 class SequenceDataset(Dataset):
     """A Dataset subclass for handling shifted sequence data"""
 
-    def __init__(self, data_iter: Iterable, vocab: Vocab, tokenizer: Callable, block_size: int):
+    def __init__(
+        self, data_iter: Iterable, vocab: Vocab, tokenizer: Callable, block_size: int
+    ):
         self.data_iter = data_iter
         self.vocab = vocab
         self.tokenizer = tokenizer
         self.block_size = block_size
+        self.tokens = self.build_tokens()
         self.num_blocks = len(self.tokens) // block_size
 
     def build_tokens(self) -> Tensor:
@@ -33,17 +36,20 @@ class SequenceDataset(Dataset):
         start_idx = idx * self.block_size
         end_idx = (idx + 1) * self.block_size
         input_block = self.tokens[start_idx:end_idx]
-        target_block = self.tokens[start_idx + 1:end_idx + 1]  # shift target block by one
+        target_block = self.tokens[
+            start_idx + 1:end_idx + 1
+        ]  # shift target block by one
         return input_block, target_block
 
 
-def get_datasets(tokenizer_name: str, block_size: int) -> Tuple[SequenceDataset]:
-    logging.info("Building datasets using %s tokenizer", tokenizer_name)
+def get_datasets(
+    tokenizer_name: str, block_size: int
+) -> Tuple[SequenceDataset, SequenceDataset, Vocab]:
     tokenizer = get_tokenizer(tokenizer_name)
     train_iter, val_iter, vocab = get_text_data(tokenizer)
     train_dataset = SequenceDataset(train_iter, vocab, tokenizer, block_size)
     val_dataset = SequenceDataset(val_iter, vocab, tokenizer, block_size)
-    return train_dataset, val_dataset
+    return train_dataset, val_dataset, vocab
 
 
 def get_train_val_iterators() -> Tuple[Iterable]:
@@ -64,7 +70,7 @@ def get_text_data(tokenizer: Callable):
     vocab = build_vocab_from_iterator(
         yield_tokens(tokenizer, train_iter),
         min_freq=3,
-        specials=["<unk>", "<pad>", "<bos>", "<eos>"]
+        specials=["<unk>", "<pad>", "<bos>", "<eos>"],
     )
     vocab.set_default_index(vocab["<unk>"])
     return train_iter, val_iter, vocab
@@ -82,3 +88,11 @@ def decode(inputs: torch.LongTensor, vocab: Vocab) -> str:
     seq = inputs.cpu().detach().tolist()
     res = vocab.lookup_tokens(seq)
     return " ".join(res)
+
+
+def sample_tokens(
+    model: GPTModel, vocab: Vocab, device: str, prompt: str, max_new_tokens: int
+):
+    encoded = encode(prompt).to(device)
+    tokens = model.generate(encoded, max_new_tokens=max_new_tokens)
+    return decode(tokens, vocab)
