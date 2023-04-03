@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 from typing import Callable, Generator, Iterable, Tuple
 
 import torch
@@ -39,9 +40,7 @@ class SequenceDataset(Dataset):
         start_idx = idx * self.block_size
         end_idx = (idx + 1) * self.block_size
         memory = self.tokens[start_idx:end_idx]
-        target = self.tokens[
-            start_idx + 1 : end_idx + 1
-        ]  # shift target block by one
+        target = self.tokens[start_idx + 1 : end_idx + 1]  # shift target block by one
         return memory, target
 
 
@@ -97,3 +96,41 @@ def sample_tokens(
     encoded = encode(prompt, vocab).to(device)
     tokens = model.generate(encoded, max_new_tokens=max_new_tokens).flatten()
     return decode(tokens, vocab)
+
+
+def get_device(input_device: str | None) -> str:
+    if input_device is None:
+        if torch.cuda.is_available():
+            return "cuda"
+        else:
+            return "cpu"
+    input_device = input_device.casefold()
+    if input_device == "cpu" and torch.cuda.is_available():
+        logging.warn(
+            "Selected 'cpu' but cuda was detected on this machine. "
+            "This will significantly impact performance. Please re-run with --device cuda "
+            "to utilize a cuda device instead of using a cpu"
+        )
+        return input_device
+
+    num_devices = torch.cuda.device_count()
+    if input_device == "cuda":
+        if num_devices > 1:
+            logging.info(
+                "Found %i cuda devices on this machine, using device 0 by default. "
+                "Use -d cuda:[DEVICE_ID] to specify a different cuda device.",
+                num_devices,
+            )
+        return input_device
+    if input_device.startswith("cuda"):
+        device_id = int(input_device.split(":")[-1])
+        if device_id not in range(num_devices):
+            raise ValueError(
+                f"Selected device ID {device_id} is not valid."
+                f" Found {num_devices} devices."
+            )
+        return input_device
+    raise ValueError(
+        "Valid inputs are ('cpu', 'cuda', 'cuda:[id]'), "
+        f"you entered {input_device}"
+    )

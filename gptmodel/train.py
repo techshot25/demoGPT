@@ -13,6 +13,7 @@ from gptmodel.utils import get_datasets
 def train(config: Dict[str, dict], device: str, cached=False):
     logging.info("Preparing data")
     hyper_params = config["hyper_params"]
+    train_params = config["train_params"]
     tokenizer_name = hyper_params["tokenizer"]
     logging.info("Building datasets and vocab using %s tokenizer", tokenizer_name)
     train_dataset, val_dataset, vocab = get_datasets(
@@ -20,7 +21,7 @@ def train(config: Dict[str, dict], device: str, cached=False):
     )
     train_loader = DataLoader(
         train_dataset,
-        batch_size=hyper_params["batch_size"],
+        batch_size=train_params["batch_size"],
         shuffle=True,
         pin_memory=True,
         pin_memory_device=device,
@@ -29,7 +30,7 @@ def train(config: Dict[str, dict], device: str, cached=False):
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=hyper_params["batch_size"],
+        batch_size=train_params["batch_size"],
         pin_memory=True,
         pin_memory_device=device,
         num_workers=2,
@@ -51,7 +52,6 @@ def train(config: Dict[str, dict], device: str, cached=False):
     num_params = sum(param.numel() for param in model.parameters() if param.requires_grad)
     logging.info("Model has %.4f million trainable parameters", num_params / 1e6)
 
-    train_params = config["train_params"]
     num_epochs = train_params["num_epochs"]
 
     if cached:

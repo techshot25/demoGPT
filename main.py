@@ -6,7 +6,7 @@ import torch
 import yaml
 
 from gptmodel.train import train
-from gptmodel.utils import sample_tokens
+from gptmodel.utils import get_device, sample_tokens
 
 
 logging.basicConfig(
@@ -17,8 +17,10 @@ logging.basicConfig(
 
 
 def main(*args):
-    parser = ArgumentParser(description="Entrypoint for training, testing, "
-                            "saving, and loading the GPT model.")
+    parser = ArgumentParser(
+        description="Entrypoint for training, testing, "
+        "saving, and loading the GPT model."
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--save", action="store_true", help="Save model to file.")
     parser.add_argument(
@@ -43,7 +45,14 @@ def main(*args):
     parser.add_argument(
         "--evaluate",
         action="store_true",
-        help="Evaluate the model by asking for input tokens."
+        help="Evaluate the model by asking for input tokens.",
+    )
+    parser.add_argument(
+        "-d",
+        "--device",
+        type=str,
+        required=False,
+        help="Device to use for training. Common choices are ('cpu', 'cuda', 'cuda:[DEVICE_ID]')",
     )
 
     args = parser.parse_args(*args)
@@ -51,8 +60,10 @@ def main(*args):
     with open(args.configuration, "r", encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_device(args.device)
+
     logging.info("Using %s backend", device)
+
     model, vocab = train(config, device, cached=args.cached)
     if args.save:
         logging.info("Saving model to %s", args.file_name)

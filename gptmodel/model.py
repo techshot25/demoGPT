@@ -129,7 +129,7 @@ class DecoderLayer(nn.Module):
             x,
             attn_mask=attn_mask,
             key_padding_mask=key_padding_mask,
-            is_causal=is_causal,
+            # is_causal=is_causal,
             need_weights=False,
         )[0]
         return self.dropout1(x)
