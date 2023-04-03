@@ -1,18 +1,21 @@
 hyper_params:
   # learning rate
-  lr: 0.03
+  lr: 0.005
   # type of tokenizer to use
   tokenizer: "basic_english"
   # size of the embedding space
-  embed_size: 512
-  # num_layers: 5
+  embed_size: 128
+  # number of decoder layers running in parallel
+  num_layers: 3
   # dropout
   dropout: 0.2
   # number of tokens in each time step
-  block_size: 128
-  batch_size: 32
+  block_size: 64
   # number of self-attention heads
   num_heads: 8
 
 train_params:
-  num_epochs: 100
+  # batch size (use a higher number if memory is big)
+  batch_size: 32
+  # how many training cycles to run
+  num_epochs: 25

@@ -24,12 +24,16 @@ def train(config: Dict[str, dict], device: str, cached=False):
         shuffle=True,
         pin_memory=True,
         pin_memory_device=device,
+        num_workers=3,
+        persistent_workers=True
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=hyper_params["batch_size"],
         pin_memory=True,
         pin_memory_device=device,
+        num_workers=2,
+        persistent_workers=True
     )
 
     model = GPTModel(
@@ -38,6 +42,8 @@ def train(config: Dict[str, dict], device: str, cached=False):
         dropout=hyper_params["dropout"],
         num_heads=hyper_params["num_heads"],
         block_size=hyper_params["block_size"],
+        num_layers=hyper_params["num_layers"],
+        device=device
     ).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=hyper_params["lr"])
